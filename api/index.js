@@ -1,6 +1,6 @@
 import express from "express";
 import qr from "qr-image";
-import fs from "fs";
+import { Readable } from "stream";
 import path from "path";
 import { fileURLToPath } from "url";
 
@@ -23,18 +23,22 @@ app.get("/", (req, res) => {
 
 app.post("/generate", (req, res) => {
   const { url } = req.body;
-  const qr_png = qr.image(url, { type: "png" });
-  const qrPath = `qr-${Date.now()}.png`;
+  try {
+    const qr_png = qr.image(url, { type: "png" });
 
-  const writeStream = fs.createWriteStream(qrPath);
-  qr_png.pipe(writeStream);
-
-  writeStream.on("finish", () => {
-    res.download(qrPath, (err) => {
-      if (err) throw err;
-      fs.unlinkSync(qrPath); // Dosya indirildikten sonra silinir
+    // QR kodunu bellek içi bir buffer'a yazın
+    const buffer = [];
+    qr_png.on("data", (chunk) => buffer.push(chunk));
+    qr_png.on("end", () => {
+      const qrImageBuffer = Buffer.concat(buffer);
+      res.set("Content-Type", "image/png");
+      res.set("Content-Disposition", 'attachment; filename="qrcode.png"');
+      res.send(qrImageBuffer);
     });
-  });
+  } catch (error) {
+    console.error("Error processing request:", error);
+    res.status(500).send("An internal error occurred");
+  }
 });
 
 app.listen(port, () => {
