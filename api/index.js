@@ -12,7 +12,7 @@ const port = process.env.PORT || 3000; // Vercel PORT ortam değişkenini kullan
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static("public"));
-app.set("views", "./views");
+app.set("views", "../views");
 app.set("view engine", "html");
 
 app.get("/", (req, res) => {
